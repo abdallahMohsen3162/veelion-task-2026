@@ -395,3 +395,9 @@ Entries are appended here as fix branches merge into `main`.
 | # | Finding | Resolution |
 |---|---|---|
 | — | No searching/filtering/sorting/pagination; clients fetch full lists | Backend `GET /tasks?search=&status=&sort=&order=&page=&limit=` (`status: all/completed/pending/todo/done`, `sort: createdAt/updatedAt/title`) and `GET /activity?search=&sort=&order=&page=&limit=` (`sort: when/action`) via Zod `listTasksQuerySchema`/`listActivityQuerySchema` (`validate` query) + `queryTasks()`/`queryActivityLogs()` returning `{ data, meta: { page, limit, total, totalPages } }`. Cache keys include the querystring. Frontend `useTasks` + Activity page drive these params server-side with search inputs, sort/order/limit selects, and prev/next pagination; proxies forward the querystring. Contract change documented in `frontend/docs/backend-endpoints.md`. |
+
+### Branch: feat/reports-page
+
+| # | Finding | Resolution |
+|---|---|---|
+| — | New `/reports` module required by README (totals, by-status, recent activity) | Added `GET /reports/tasks-summary` consumer: `lib/backendApi.getReportsSummaryFromBackend()` (Zod `tasksSummarySchema`), proxy `app/api/reports/route.ts` (forwards status, 502 on shape drift), `app/reports/page.tsx` with `components/reports/StatCard.tsx`, loading (`role="status"`)/error (`role="alert"` + Retry)/empty states, and home-page link. |

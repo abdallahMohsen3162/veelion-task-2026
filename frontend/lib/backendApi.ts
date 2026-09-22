@@ -7,11 +7,13 @@ import type {
   PaginatedTasksResponse,
   Task,
   TasksQueryParams,
+  TasksSummary,
 } from "@/types/api";
 import {
   activityPaginatedResponseSchema,
   taskResponseSchema,
   tasksPaginatedResponseSchema,
+  tasksSummarySchema,
 } from "@/lib/schemas";
 
 export class BackendError extends Error {
@@ -141,6 +143,30 @@ export async function getActivityFromBackend(
   const parsed = activityPaginatedResponseSchema.safeParse(await response.json());
   if (!parsed.success) {
     throw new BackendError("Upstream activity shape changed.", 502);
+  }
+  return parsed.data;
+}
+
+export async function getReportsSummaryFromBackend(): Promise<TasksSummary> {
+  let response: Response;
+  try {
+    response = await fetch(buildBackendUrl("/reports/tasks-summary"), {
+      cache: "no-store",
+    });
+  } catch (error) {
+    throw new BackendError(
+      error instanceof Error ? error.message : "Failed to load reports.",
+      502
+    );
+  }
+
+  if (!response.ok) {
+    throw await parseBackendError(response);
+  }
+
+  const parsed = tasksSummarySchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new BackendError("Upstream reports shape changed.", 502);
   }
   return parsed.data;
 }
