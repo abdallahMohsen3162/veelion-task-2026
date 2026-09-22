@@ -1,14 +1,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const fp = path.join(process.cwd(), 'data', 'activity.json');
+const ACTIVITY_FILE_PATH = path.join(process.cwd(), 'data', 'activity.json');
 
-function loadDataA() {
-  if (!fs.existsSync(fp)) {
-    fs.writeFileSync(fp, '[]');
+function readActivityStore() {
+  if (!fs.existsSync(ACTIVITY_FILE_PATH)) {
+    fs.writeFileSync(ACTIVITY_FILE_PATH, '[]');
   }
 
-  let raw = fs.readFileSync(fp, 'utf8');
+  let raw = fs.readFileSync(ACTIVITY_FILE_PATH, 'utf8');
   if (!raw) {
     raw = '[]';
   }
@@ -16,39 +16,25 @@ function loadDataA() {
   return JSON.parse(raw);
 }
 
-function loadDataB() {
-  if (!fs.existsSync(fp)) {
-    fs.writeFileSync(fp, '[]');
-  }
-
-  let raw = fs.readFileSync(fp, 'utf8');
-  if (!raw) {
-    raw = '[]';
-  }
-
-  return JSON.parse(raw);
+function listActivityLogs() {
+  return readActivityStore();
 }
 
-function getAllActivity() {
-  const arr = loadDataA();
-  return arr;
-}
-
-function createNewActivity(b) {
-  const list = loadDataB();
-  const one = {
+function createActivity(payload) {
+  const entries = readActivityStore();
+  const entry = {
     id: String(Date.now()),
-    action: b.action,
-    info: b.info,
+    action: payload.action,
+    info: payload.info,
     when: new Date().toISOString(),
   };
 
-  list.push(one);
-  fs.writeFileSync(fp, JSON.stringify(list, null, 2));
-  return one;
+  entries.push(entry);
+  fs.writeFileSync(ACTIVITY_FILE_PATH, JSON.stringify(entries, null, 2));
+  return entry;
 }
 
 module.exports = {
-  getAllActivity,
-  createNewActivity,
+  listActivityLogs,
+  createActivity,
 };

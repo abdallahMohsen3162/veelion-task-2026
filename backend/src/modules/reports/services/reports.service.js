@@ -13,9 +13,9 @@ async function getTasksSummary() {
   const total = tasks.length;
 
   const byStatus = {
-    todo: tasks.filter(t => !t.completed).length,
+    todo: tasks.filter((task) => !task.completed).length,
     "in-progress": 0,
-    done: tasks.filter(t => t.completed).length
+    done: tasks.filter((task) => task.completed).length
   };
 
   const recentActivityCount = activities.length;
