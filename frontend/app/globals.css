@@ -247,3 +247,98 @@ select.input {
   margin-bottom: 0.75rem;
   font-size: 1.05rem;
 }
+
+/* Analytics visuals — scoped with analytics-/donut-/bar-/stat-tone- prefixes
+   so status colors never leak onto unrelated components. */
+
+.stat-tone-todo {
+  border-top: 4px solid var(--pending-border);
+}
+
+.stat-tone-done {
+  border-top: 4px solid var(--completed-text);
+}
+
+.stat-tone-info {
+  border-top: 4px solid var(--primary);
+}
+
+.analytics-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 220px 1fr;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.donut-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.donut-track {
+  stroke: var(--chip);
+}
+
+.donut-progress {
+  stroke: var(--completed-text);
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.donut-center {
+  font-size: 1.5rem;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.donut-caption {
+  font-size: 0.7rem;
+  fill: var(--muted);
+}
+
+.bar-row {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.bar-row:last-child {
+  margin-bottom: 0;
+}
+
+.bar-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.bar-track {
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--chip);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  min-width: 0;
+}
+
+.bar-fill-todo {
+  background: var(--pending-border);
+}
+
+.bar-fill-in-progress {
+  background: var(--primary);
+}
+
+.bar-fill-done {
+  background: var(--completed-text);
+}

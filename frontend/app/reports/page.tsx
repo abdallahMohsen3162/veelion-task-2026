@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BackNav } from "@/components/common/BackNav";
+import { CompletionDonut } from "@/components/reports/CompletionDonut";
 import { StatCard } from "@/components/reports/StatCard";
+import { StatusBars } from "@/components/reports/StatusBars";
 import { tasksSummarySchema } from "@/lib/schemas";
 import type { TasksSummary } from "@/types/api";
 
@@ -100,8 +102,16 @@ export default function ReportsPage() {
       ) : summary ? (
         <>
           <section className="stats-grid">
-            <StatCard label="Total tasks" value={summary.total} />
+            <StatCard label="Total tasks" value={summary.total} tone="info" />
             <StatCard label="Recent activity" value={summary.recentActivityCount} hint="Logged events" />
+          </section>
+
+          <section className="card card-pad">
+            <h2 className="section-title">Completion overview</h2>
+            <div className="analytics-grid">
+              <CompletionDonut done={summary.byStatus.done} total={summary.total} />
+              <StatusBars byStatus={summary.byStatus} total={summary.total} />
+            </div>
           </section>
 
           <section className="card card-pad">
@@ -109,13 +119,14 @@ export default function ReportsPage() {
               Tasks by status
             </h2>
             <section className="stats-grid">
-              <StatCard label="To do" value={summary.byStatus.todo} />
+              <StatCard label="To do" value={summary.byStatus.todo} tone="todo" />
               <StatCard
                 label="In progress"
                 value={summary.byStatus["in-progress"]}
                 hint="Always 0 — tasks only track completed"
+                tone="info"
               />
-              <StatCard label="Done" value={summary.byStatus.done} />
+              <StatCard label="Done" value={summary.byStatus.done} tone="done" />
             </section>
           </section>
         </>
