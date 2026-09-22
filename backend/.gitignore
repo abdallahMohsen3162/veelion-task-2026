@@ -1,0 +1,7 @@
+node_modules/
+*.log
+
+# Environment variables — commit .env.example only
+.env
+.env.*
+!.env.example
