@@ -18,8 +18,73 @@ function buildTaskRecord(payload) {
   };
 }
 
+function matchesTaskStatus(task, status) {
+  if (status === 'all') {
+    return true;
+  }
+  if (status === 'completed' || status === 'done') {
+    return task.completed === true;
+  }
+  if (status === 'pending' || status === 'todo') {
+    return task.completed === false;
+  }
+  return true;
+}
+
+function compareTasksByField(a, b, sort, order) {
+  let result = 0;
+
+  if (sort === 'title') {
+    result = String(a.title || '').localeCompare(String(b.title || ''));
+  } else if (sort === 'updatedAt') {
+    result = String(a.updatedAt || '').localeCompare(String(b.updatedAt || ''));
+  } else {
+    result = String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+  }
+
+  return order === 'asc' ? result : -result;
+}
+
 async function getAllTasks() {
   return readJsonArray(TASKS_FILE_PATH);
+}
+
+async function queryTasks(options) {
+  const search = (options.search || '').trim().toLowerCase();
+  const status = options.status || 'all';
+  const sort = options.sort || 'createdAt';
+  const order = options.order || 'desc';
+  const page = options.page || 1;
+  const limit = options.limit || 20;
+
+  let tasks = await readJsonArray(TASKS_FILE_PATH);
+
+  const filtered = tasks.filter((task) => {
+    if (!matchesTaskStatus(task, status)) {
+      return false;
+    }
+
+    if (search) {
+      const title = String(task.title || '').toLowerCase();
+      if (!title.includes(search)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => compareTasksByField(a, b, sort, order));
+
+  const total = sorted.length;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+  const start = (page - 1) * limit;
+  const data = sorted.slice(start, start + limit);
+
+  return {
+    data,
+    meta: { page, limit, total, totalPages },
+  };
 }
 
 async function getTaskById(taskId) {
@@ -80,6 +145,7 @@ async function deleteTask(taskId) {
 
 module.exports = {
   getAllTasks,
+  queryTasks,
   getTaskById,
   createTask,
   updateTask,

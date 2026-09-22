@@ -1,28 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ActivityLog } from "@/types/api";
+import { useCallback, useEffect, useState } from "react";
+import type { ActivityLog, PaginatedActivityResponse, PaginationMeta } from "@/types/api";
+import { activityPaginatedResponseSchema } from "@/lib/schemas";
 
 function formatTimestamp(value: string) {
   return new Date(value).toLocaleString();
 }
 
-function filterActivityLogs(items: ActivityLog[], text: string) {
-  const query = text.trim().toLowerCase();
-  if (!query) {
-    return items;
+type ActivitySort = "when" | "action";
+type SortOrder = "asc" | "desc";
+
+const DEFAULT_META: PaginationMeta = { page: 1, limit: 10, total: 0, totalPages: 0 };
+
+async function fetchActivityLogs(
+  params: { search: string; sort: ActivitySort; order: SortOrder; page: number; limit: number },
+  signal: AbortSignal
+): Promise<PaginatedActivityResponse> {
+  const query = new URLSearchParams();
+  if (params.search.trim()) {
+    query.set("search", params.search.trim());
   }
+  query.set("sort", params.sort);
+  query.set("order", params.order);
+  query.set("page", String(params.page));
+  query.set("limit", String(params.limit));
 
-  return items.filter(
-    (item) =>
-      (item.action || "").toLowerCase().includes(query) ||
-      (item.info || "").toLowerCase().includes(query)
-  );
-}
-
-async function fetchActivityLogs(signal: AbortSignal): Promise<ActivityLog[]> {
-  const response = await fetch("/api/activity", { signal });
+  const response = await fetch(`/api/activity?${query.toString()}`, { signal });
 
   if (!response.ok) {
     let message = `Request failed with ${response.status}`;
@@ -37,35 +42,50 @@ async function fetchActivityLogs(signal: AbortSignal): Promise<ActivityLog[]> {
     throw new Error(message);
   }
 
-  const logs = (await response.json()) as ActivityLog[];
-  return Array.isArray(logs) ? logs : [];
+  const parsed = activityPaginatedResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new Error("Activity response changed shape.");
+  }
+  return parsed.data;
 }
 
 export default function ActivityPage() {
-  const [allActivity, setAllActivity] = useState<ActivityLog[]>([]);
-  const [query, setQuery] = useState("");
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<ActivitySort>("when");
+  const [order, setOrder] = useState<SortOrder>("desc");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadActivity = useCallback(async (signal: AbortSignal) => {
-    setLoading(true);
-    try {
-      const logs = await fetchActivityLogs(signal);
-      if (!signal.aborted) {
-        setAllActivity(logs);
-        setError(null);
+  const loadActivity = useCallback(
+    async (signal: AbortSignal) => {
+      setLoading(true);
+      try {
+        const result = await fetchActivityLogs({ search, sort, order, page, limit }, signal);
+        if (!signal.aborted) {
+          setLogs(result.data);
+          setMeta(result.meta);
+          setError(null);
+        }
+      } catch (err) {
+        if (!signal.aborted) {
+          if (err instanceof Error && err.name === "AbortError") {
+            return;
+          }
+          setLogs([]);
+          setError(err instanceof Error ? err.message : "Failed to load activity.");
+        }
+      } finally {
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      if (!signal.aborted) {
-        setAllActivity([]);
-        setError(err instanceof Error ? err.message : "Failed to load activity.");
-      }
-    } finally {
-      if (!signal.aborted) {
-        setLoading(false);
-      }
-    }
-  }, []);
+    },
+    [search, sort, order, page, limit]
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,10 +101,10 @@ export default function ActivityPage() {
     loadActivity(controller.signal);
   };
 
-  const shownActivity = useMemo(
-    () => filterActivityLogs(allActivity, query),
-    [allActivity, query]
-  );
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   return (
     <main className="stack">
@@ -94,25 +114,84 @@ export default function ActivityPage() {
         </Link>
       </nav>
 
-      <section className="card" style={{ padding: "1rem" }}>
-        <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Activity Feed</h1>
+      <section className="card" style={{ padding: "1rem", display: "grid", gap: "0.75rem" }}>
+        <h1 style={{ marginTop: 0, marginBottom: 0 }}>Activity Feed</h1>
 
-        <label htmlFor="activity-search" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>
-          Search activity
-        </label>
-        <input
-          id="activity-search"
-          type="search"
-          className="input"
-          placeholder="Search by action or info"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
+        <div>
+          <label htmlFor="activity-search" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>
+            Search activity
+          </label>
+          <input
+            id="activity-search"
+            type="search"
+            className="input"
+            placeholder="Search by action or info"
+            value={search}
+            onChange={(event) => handleSearchChange(event.target.value)}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <div>
+            <label htmlFor="activity-sort" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+              Sort by
+            </label>
+            <select
+              id="activity-sort"
+              className="input"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value as ActivitySort);
+                setPage(1);
+              }}
+            >
+              <option value="when">Time</option>
+              <option value="action">Action</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="activity-order" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+              Order
+            </label>
+            <select
+              id="activity-order"
+              className="input"
+              value={order}
+              onChange={(event) => {
+                setOrder(event.target.value as SortOrder);
+                setPage(1);
+              }}
+            >
+              <option value="desc">Newest first</option>
+              <option value="asc">Oldest first</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="activity-limit" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+              Per page
+            </label>
+            <select
+              id="activity-limit"
+              className="input"
+              value={String(limit)}
+              onChange={(event) => {
+                setLimit(Number(event.target.value));
+                setPage(1);
+              }}
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+        </div>
       </section>
 
       <section className="card" style={{ padding: "1rem" }}>
         <small style={{ color: "var(--muted)" }}>
-          Total: {allActivity.length} | Visible: {shownActivity.length}
+          Total: {meta.total} | Page {meta.page} of {Math.max(meta.totalPages, 1)}
         </small>
       </section>
 
@@ -128,9 +207,9 @@ export default function ActivityPage() {
               Retry
             </button>
           </div>
-        ) : shownActivity.length === 0 ? (
+        ) : logs.length === 0 ? (
           <p style={{ color: "var(--muted)", margin: 0 }}>
-            {query ? "No activity matches your search." : "No activity yet."}
+            {search ? "No activity matches your search." : "No activity yet."}
           </p>
         ) : (
           <ul
@@ -142,7 +221,7 @@ export default function ActivityPage() {
               gap: "0.7rem",
             }}
           >
-            {shownActivity.map((item) => (
+            {logs.map((item) => (
               <li
                 key={item.id}
                 style={{
@@ -160,6 +239,34 @@ export default function ActivityPage() {
           </ul>
         )}
       </section>
+
+      {!loading && !error && meta.totalPages > 1 ? (
+        <section
+          className="card"
+          style={{ padding: "0.8rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}
+          aria-label="Activity pagination"
+        >
+          <button
+            type="button"
+            className="button"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous
+          </button>
+          <small style={{ color: "var(--muted)" }}>
+            Page {meta.page} of {meta.totalPages}
+          </small>
+          <button
+            type="button"
+            className="button"
+            disabled={page >= meta.totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </button>
+        </section>
+      ) : null}
     </main>
   );
 }

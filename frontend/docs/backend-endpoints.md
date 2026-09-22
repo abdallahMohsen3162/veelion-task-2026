@@ -16,7 +16,20 @@ type ErrorResponse = {
 
 ### GET /tasks
 
-Fetch all tasks.
+Fetch tasks with searching, filtering, sorting, and pagination.
+
+Query params (all optional):
+
+```ts
+type ListTasksQuery = {
+  search?: string; // case-insensitive match on title, max 200
+  status?: "all" | "completed" | "pending" | "todo" | "done"; // default "all" ("todo" = pending, "done" = completed)
+  sort?: "createdAt" | "updatedAt" | "title"; // default "createdAt"
+  order?: "asc" | "desc"; // default "desc"
+  page?: number; // >= 1, default 1
+  limit?: number; // 1-100, default 20
+};
+```
 
 ```ts
 type Task = {
@@ -27,10 +40,23 @@ type Task = {
   updatedAt: string; // ISO datetime
 };
 
+type PaginationMeta = {
+  page: number;
+  limit: number;
+  total: number; // total after filtering, before pagination
+  totalPages: number; // 0 when total is 0
+};
+
 type GetTasksResponse = {
   data: Task[];
+  meta: PaginationMeta;
 };
 ```
+
+Notes:
+- Contract changed from `{ data: Task[] }` to `{ data, meta }` to support pagination.
+- Validation is Zod-based: unknown query values return `400` with `{ error: { message, details } }`.
+- GET responses are cached in-memory by `METHOD + originalUrl`; `POST/PATCH/DELETE` clear the cache on success.
 
 ### GET /tasks/:id
 
@@ -100,7 +126,19 @@ Possible errors:
 
 ### GET /activity
 
-Fetch activity logs.
+Fetch activity logs with searching, sorting, and pagination.
+
+Query params (all optional):
+
+```ts
+type ListActivityQuery = {
+  search?: string; // case-insensitive match on action + info, max 200
+  sort?: "when" | "action"; // default "when"
+  order?: "asc" | "desc"; // default "desc"
+  page?: number; // >= 1, default 1
+  limit?: number; // 1-100, default 20
+};
+```
 
 ```ts
 type ActivityLog = {
@@ -110,8 +148,14 @@ type ActivityLog = {
   when: string; // ISO datetime
 };
 
-type GetActivityResponse = ActivityLog[];
+type GetActivityResponse = {
+  data: ActivityLog[];
+  meta: PaginationMeta;
+};
 ```
+
+Notes:
+- Contract changed from bare `ActivityLog[]` to `{ data, meta }` for consistency with tasks.
 
 ### POST /activity
 
@@ -127,8 +171,8 @@ type CreateActivityResponse = ActivityLog;
 ```
 
 Notes:
-- `action` and `info` are currently not validated by backend.
-- Response shape for activity endpoints is raw objects/arrays (not wrapped in `data`).
+- `POST /activity` bodies are Zod-validated (`action`/`info` optional trimmed strings, strict — unknown keys return `400`).
+- `GET /activity` returns `{ data, meta }`; `POST /activity` returns the raw created log.
 
 ## Reports Endpoints
 

@@ -1,12 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ErrorResponse, Task, TaskFilter, TaskResponse, TasksResponse } from "@/types/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  ErrorResponse,
+  PaginatedTasksResponse,
+  PaginationMeta,
+  Task,
+  TaskFilter,
+  TaskResponse,
+} from "@/types/api";
 import {
   taskResponseSchema,
-  tasksResponseSchema,
+  tasksPaginatedResponseSchema,
   updateTaskPayloadSchema,
 } from "@/lib/schemas";
+
+export type TasksSortField = "createdAt" | "updatedAt" | "title";
+export type SortOrder = "asc" | "desc";
+
+const DEFAULT_META: PaginationMeta = { page: 1, limit: 10, total: 0, totalPages: 0 };
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
@@ -48,9 +60,35 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+function buildTasksUrl(
+  filter: TaskFilter,
+  search: string,
+  sort: TasksSortField,
+  order: SortOrder,
+  page: number,
+  limit: number
+): string {
+  const params = new URLSearchParams();
+  if (search.trim()) {
+    params.set("search", search.trim());
+  }
+  params.set("status", filter);
+  params.set("sort", sort);
+  params.set("order", order);
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  return `/api/tasks?${params.toString()}`;
+}
+
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<TaskFilter>("all");
+  const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
+  const [filter, setFilterState] = useState<TaskFilter>("all");
+  const [search, setSearchState] = useState("");
+  const [sort, setSortState] = useState<TasksSortField>("createdAt");
+  const [order, setOrderState] = useState<SortOrder>("desc");
+  const [page, setPageState] = useState(1);
+  const [limit, setLimitState] = useState(10);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -60,6 +98,8 @@ export function useTasks() {
   const fetchSequenceRef = useRef(0);
   const hasLoadedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const queryRef = useRef({ filter, search, sort, order, page, limit });
+  queryRef.current = { filter, search, sort, order, page, limit };
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -70,6 +110,7 @@ export function useTasks() {
   }, []);
 
   const fetchTasks = useCallback(async () => {
+    const current = queryRef.current;
     fetchControllerRef.current?.abort();
     const controller = new AbortController();
     fetchControllerRef.current = controller;
@@ -86,12 +127,20 @@ export function useTasks() {
         setError("");
       }
 
-      const rawTasks = await requestJson<TasksResponse>("/api/tasks", {
+      const url = buildTasksUrl(
+        current.filter,
+        current.search,
+        current.sort,
+        current.order,
+        current.page,
+        current.limit
+      );
+      const rawTasks = await requestJson<PaginatedTasksResponse>(url, {
         method: "GET",
         signal: controller.signal,
       });
 
-      const parsedTasks = tasksResponseSchema.safeParse(rawTasks);
+      const parsedTasks = tasksPaginatedResponseSchema.safeParse(rawTasks);
       if (!parsedTasks.success) {
         throw new Error("Tasks response changed shape.");
       }
@@ -104,6 +153,7 @@ export function useTasks() {
       }
 
       setTasks(parsedTasks.data.data);
+      setMeta(parsedTasks.data.meta);
       hasLoadedRef.current = true;
     } catch (error) {
       if (!isMountedRef.current || controller.signal.aborted || isAbortError(error)) {
@@ -126,6 +176,39 @@ export function useTasks() {
         setRefreshing(false);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks, filter, search, sort, order, page, limit]);
+
+  const setFilter = useCallback((value: TaskFilter) => {
+    setFilterState(value);
+    setPageState(1);
+  }, []);
+
+  const setSearch = useCallback((value: string) => {
+    setSearchState(value);
+    setPageState(1);
+  }, []);
+
+  const setSort = useCallback((value: TasksSortField) => {
+    setSortState(value);
+    setPageState(1);
+  }, []);
+
+  const setOrder = useCallback((value: SortOrder) => {
+    setOrderState(value);
+    setPageState(1);
+  }, []);
+
+  const setPage = useCallback((value: number) => {
+    setPageState(Math.max(1, value));
+  }, []);
+
+  const setLimit = useCallback((value: number) => {
+    setLimitState(Math.min(100, Math.max(1, value)));
+    setPageState(1);
   }, []);
 
   const updateTaskStatus = useCallback(async (taskId: string, completed: boolean) => {
@@ -182,31 +265,26 @@ export function useTasks() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  const filteredTasks = useMemo(() => {
-    if (filter === "completed") {
-      return tasks.filter((task) => task.completed);
-    }
-
-    if (filter === "pending") {
-      return tasks.filter((task) => !task.completed);
-    }
-
-    return tasks;
-  }, [tasks, filter]);
-
   return {
     tasks,
-    filteredTasks,
+    filteredTasks: tasks,
+    meta,
     filter,
+    search,
+    sort,
+    order,
+    page,
+    limit,
     loading,
     refreshing,
     error,
     updatingTaskIds,
     setFilter,
+    setSearch,
+    setSort,
+    setOrder,
+    setPage,
+    setLimit,
     fetchTasks,
     updateTaskStatus,
   };

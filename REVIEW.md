@@ -389,3 +389,9 @@ Entries are appended here as fix branches merge into `main`.
 | # | Finding | Resolution |
 |---|---|---|
 | 1.3 | Every request re-reads JSON files from disk; no response cache | Added separated `backend/src/middleware/cache.js` (`cacheMiddleware` + `clearCache`, no TTL): GET responses cached by `METHOD + originalUrl` (query-aware), served with stored status; `POST/PATCH/DELETE` clear the cache on `finish` when `status < 400` only. Wired via `router.use(cacheMiddleware)` in tasks, activity, and reports routers. |
+
+### Branch: feat/query-params
+
+| # | Finding | Resolution |
+|---|---|---|
+| — | No searching/filtering/sorting/pagination; clients fetch full lists | Backend `GET /tasks?search=&status=&sort=&order=&page=&limit=` (`status: all/completed/pending/todo/done`, `sort: createdAt/updatedAt/title`) and `GET /activity?search=&sort=&order=&page=&limit=` (`sort: when/action`) via Zod `listTasksQuerySchema`/`listActivityQuerySchema` (`validate` query) + `queryTasks()`/`queryActivityLogs()` returning `{ data, meta: { page, limit, total, totalPages } }`. Cache keys include the querystring. Frontend `useTasks` + Activity page drive these params server-side with search inputs, sort/order/limit selects, and prev/next pagination; proxies forward the querystring. Contract change documented in `frontend/docs/backend-endpoints.md`. |

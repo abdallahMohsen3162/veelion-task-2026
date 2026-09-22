@@ -17,10 +17,13 @@ function validate(schemas) {
 
       if (schemas.query) {
         const parsedQuery = schemas.query.parse(req.query);
-        req.query = parsedQuery;
-        // Express 4 defines req.query as a getter; assigning may throw
-        // in some versions, so also stash the validated copy.
         req.validatedQuery = parsedQuery;
+        try {
+          req.query = parsedQuery;
+        } catch {
+          // Express 4 exposes req.query as a getter in some versions;
+          // validated copy is already stashed above.
+        }
       }
 
       if (schemas.body) {

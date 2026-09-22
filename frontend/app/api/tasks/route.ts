@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
 import { BackendError, getTasksFromBackend } from "@/lib/backendApi";
-import { tasksResponseSchema } from "@/lib/schemas";
+import { tasksPaginatedResponseSchema } from "@/lib/schemas";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const tasks = await getTasksFromBackend();
-    const parsed = tasksResponseSchema.safeParse({ data: tasks });
+    const url = new URL(request.url);
+    const params = {
+      search: url.searchParams.get("search") || undefined,
+      status: url.searchParams.get("status") || undefined,
+      sort: url.searchParams.get("sort") || undefined,
+      order: url.searchParams.get("order") || undefined,
+      page: url.searchParams.get("page") || undefined,
+      limit: url.searchParams.get("limit") || undefined,
+    };
+    const result = await getTasksFromBackend(
+      params as { search?: string; status?: "all" | "completed" | "pending" }
+    );
+    const parsed = tasksPaginatedResponseSchema.safeParse(result);
     if (!parsed.success) {
       return NextResponse.json(
         { error: { message: "Upstream tasks shape changed." } },
