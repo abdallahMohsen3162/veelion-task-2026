@@ -22,8 +22,8 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     try {
-      const body = (await response.json()) as ErrorResponse;
-      throw new Error(body.error?.message || `Request failed with ${response.status}`);
+      const errorBody = (await response.json()) as ErrorResponse;
+      throw new Error(errorBody.error?.message || `Request failed with ${response.status}`);
     } catch (error) {
       throw new Error(getErrorMessage(error, `Request failed with ${response.status}`));
     }
@@ -44,11 +44,11 @@ export function useTasks() {
       setLoading(true);
       setError("");
 
-      const body = await requestJson<TasksResponse>("/api/tasks", {
+      const response = await requestJson<TasksResponse>("/api/tasks", {
         method: "GET",
       });
 
-      setTasks(body.data);
+      setTasks(response.data);
     } catch (error) {
       setError(getErrorMessage(error, "Could not load tasks right now."));
     } finally {
@@ -61,13 +61,13 @@ export function useTasks() {
       setUpdatingTaskId(taskId);
       setError("");
 
-      const body = await requestJson<TaskResponse>(`/api/tasks/${taskId}`, {
+      const response = await requestJson<TaskResponse>(`/api/tasks/${taskId}`, {
         method: "PATCH",
         body: JSON.stringify({ completed }),
       });
 
       setTasks((previous) =>
-        previous.map((task) => (task.id === taskId ? body.data : task))
+        previous.map((task) => (task.id === taskId ? response.data : task))
       );
     } catch (error) {
       setError(getErrorMessage(error, "Could not update task status."));

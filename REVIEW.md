@@ -342,3 +342,15 @@ repository (commit `f99d24f`).
 
 Findings addressed during the refactor are marked in the "Resolution log"
 appended at the end of this file as branches merge to `main`.
+
+---
+
+## Resolution log
+
+Entries are appended here as fix branches merge into `main`.
+
+### Branch: refactor/naming-conventions
+
+| # | Finding | Resolution |
+|---|---|---|
+| 10 | Misleading names (`get_activity`, `aSvc`, `loadDataA/B`, `removeTask`, `router`, `t`, `body`, dead `taskValidator.js`) | Renamed activity service API to `readActivityStore`/`listActivityLogs`/`createActivity`; controller exports `getActivity`/`createActivity`; `removeTask` ? `deleteTask`; reports `router` ? `reportsRouter`, `t` ? `task`; frontend `body` ? `response` in `useTasks.ts`; deleted dead `backend/src/modules/tasks/utils/taskValidator.js`. Remaining activity-page names (`tick`, `forcedList`, `formatTimeA/B`, `applyFilterA/B`) deferred to the activity-feed branch. |

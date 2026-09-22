@@ -72,7 +72,7 @@ async function patchTask(req, res) {
   res.status(200).json({ data: task });
 }
 
-async function removeTask(req, res) {
+async function deleteTask(req, res) {
   await tasksService.deleteTask(req.params.id);
   res.status(204).send();
 }
@@ -82,5 +82,5 @@ module.exports = {
   getTask,
   createTask,
   patchTask,
-  removeTask,
+  deleteTask,
 };
