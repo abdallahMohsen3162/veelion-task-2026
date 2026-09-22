@@ -48,6 +48,16 @@ export const updateTaskPayloadSchema = z
   })
   .strict();
 
+export const tasksSummarySchema = z.object({
+  total: z.number(),
+  byStatus: z.object({
+    todo: z.number(),
+    "in-progress": z.number(),
+    done: z.number(),
+  }),
+  recentActivityCount: z.number(),
+});
+
 export const tasksQuerySchema = z.object({
   search: z.string().max(200).optional(),
   status: z.enum(["all", "completed", "pending"]).optional(),
