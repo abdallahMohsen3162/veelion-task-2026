@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ErrorResponse, Task, TaskFilter, TaskResponse, TasksResponse } from "@/types/api";
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -9,6 +9,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -23,8 +27,15 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     try {
       const errorBody = (await response.json()) as ErrorResponse;
-      throw new Error(errorBody.error?.message || `Request failed with ${response.status}`);
+      const upstream = new Error(
+        errorBody.error?.message || `Request failed with ${response.status}`
+      );
+      (upstream as Error & { status?: number }).status = response.status;
+      throw upstream;
     } catch (error) {
+      if (error instanceof Error && "status" in error) {
+        throw error;
+      }
       throw new Error(getErrorMessage(error, `Request failed with ${response.status}`));
     }
   }
@@ -36,43 +47,115 @@ export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [updatingTaskId, setUpdatingTaskId] = useState<string>("");
+  const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(new Set());
+
+  const fetchControllerRef = useRef<AbortController | null>(null);
+  const fetchSequenceRef = useRef(0);
+  const hasLoadedRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      fetchControllerRef.current?.abort();
+    };
+  }, []);
 
   const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+    fetchControllerRef.current?.abort();
+    const controller = new AbortController();
+    fetchControllerRef.current = controller;
+    const sequence = ++fetchSequenceRef.current;
+    const isInitialLoad = !hasLoadedRef.current;
 
-      const response = await requestJson<TasksResponse>("/api/tasks", {
+    try {
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+      if (isMountedRef.current) {
+        setError("");
+      }
+
+      const taskResponse = await requestJson<TasksResponse>("/api/tasks", {
         method: "GET",
+        signal: controller.signal,
       });
 
-      setTasks(response.data);
+      if (!isMountedRef.current || controller.signal.aborted) {
+        return;
+      }
+      if (sequence !== fetchSequenceRef.current) {
+        return;
+      }
+
+      setTasks(taskResponse.data);
+      hasLoadedRef.current = true;
     } catch (error) {
+      if (!isMountedRef.current || controller.signal.aborted || isAbortError(error)) {
+        return;
+      }
+      if (sequence !== fetchSequenceRef.current) {
+        return;
+      }
       setError(getErrorMessage(error, "Could not load tasks right now."));
     } finally {
-      setLoading(false);
+      if (!isMountedRef.current || controller.signal.aborted) {
+        return;
+      }
+      if (sequence !== fetchSequenceRef.current) {
+        return;
+      }
+      if (isInitialLoad) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   }, []);
 
   const updateTaskStatus = useCallback(async (taskId: string, completed: boolean) => {
-    try {
-      setUpdatingTaskId(taskId);
+    setUpdatingTaskIds((previous) => new Set(previous).add(taskId));
+    if (isMountedRef.current) {
       setError("");
+    }
 
-      const response = await requestJson<TaskResponse>(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ completed }),
-      });
+    try {
+      const taskResponse = await requestJson<TaskResponse>(
+        `/api/tasks/${encodeURIComponent(taskId)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ completed }),
+        }
+      );
+
+      if (!isMountedRef.current) {
+        return;
+      }
 
       setTasks((previous) =>
-        previous.map((task) => (task.id === taskId ? response.data : task))
+        previous.map((task) => (task.id === taskId ? taskResponse.data : task))
       );
     } catch (error) {
+      if (!isMountedRef.current) {
+        return;
+      }
+      if (isAbortError(error)) {
+        return;
+      }
       setError(getErrorMessage(error, "Could not update task status."));
     } finally {
-      setUpdatingTaskId("");
+      if (isMountedRef.current) {
+        setUpdatingTaskIds((previous) => {
+          const next = new Set(previous);
+          next.delete(taskId);
+          return next;
+        });
+      }
     }
   }, []);
 
@@ -97,8 +180,9 @@ export function useTasks() {
     filteredTasks,
     filter,
     loading,
+    refreshing,
     error,
-    updatingTaskId,
+    updatingTaskIds,
     setFilter,
     fetchTasks,
     updateTaskStatus,

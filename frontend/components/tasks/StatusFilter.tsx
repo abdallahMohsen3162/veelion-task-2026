@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import type { TaskFilter } from "@/types/api";
 
 const FILTERS: Array<{ label: string; value: TaskFilter }> = [
@@ -11,25 +12,43 @@ type StatusFilterProps = {
   onChange: (value: TaskFilter) => void;
 };
 
+type FilterButtonProps = {
+  label: string;
+  filterValue: TaskFilter;
+  active: boolean;
+  onChange: (value: TaskFilter) => void;
+};
+
+const FilterButton = memo(function FilterButton({ label, filterValue, active, onChange }: FilterButtonProps) {
+  const handleClick = useCallback(() => {
+    onChange(filterValue);
+  }, [onChange, filterValue]);
+
+  return (
+    <button
+      type="button"
+      className={active ? "button primary" : "button"}
+      onClick={handleClick}
+      aria-pressed={active}
+    >
+      {label}
+    </button>
+  );
+});
+
 export function StatusFilter({ value, onChange }: StatusFilterProps) {
   return (
     <section aria-label="Filter tasks by status" className="card" style={{ padding: "0.8rem" }}>
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-        {FILTERS.map((filter) => {
-          const active = filter.value === value;
-
-          return (
-            <button
-              key={filter.value}
-              type="button"
-              className={active ? "button primary" : "button"}
-              onClick={() => onChange(filter.value)}
-              aria-pressed={active}
-            >
-              {filter.label}
-            </button>
-          );
-        })}
+        {FILTERS.map((filter) => (
+          <FilterButton
+            key={filter.value}
+            label={filter.label}
+            filterValue={filter.value}
+            active={filter.value === value}
+            onChange={onChange}
+          />
+        ))}
       </div>
     </section>
   );

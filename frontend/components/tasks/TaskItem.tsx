@@ -1,12 +1,17 @@
+import { memo, useCallback } from "react";
 import type { Task } from "@/types/api";
 
 type TaskItemProps = {
   task: Task;
   busy: boolean;
-  onToggle: (task: Task) => void;
+  onToggle: (taskId: string, nextCompleted: boolean) => void;
 };
 
-export function TaskItem({ task, busy, onToggle }: TaskItemProps) {
+function TaskItemView({ task, busy, onToggle }: TaskItemProps) {
+  const handleClick = useCallback(() => {
+    onToggle(task.id, !task.completed);
+  }, [onToggle, task.id, task.completed]);
+
   return (
     <li
       className="card"
@@ -29,7 +34,7 @@ export function TaskItem({ task, busy, onToggle }: TaskItemProps) {
         <button
           type="button"
           className="button"
-          onClick={() => onToggle(task)}
+          onClick={handleClick}
           disabled={busy}
           aria-label={`Mark ${task.title} as ${task.completed ? "pending" : "completed"}`}
         >
@@ -39,3 +44,5 @@ export function TaskItem({ task, busy, onToggle }: TaskItemProps) {
     </li>
   );
 }
+
+export const TaskItem = memo(TaskItemView);
