@@ -6,8 +6,7 @@ function getActivity(req, res) {
 }
 
 function createActivity(req, res) {
-  const payload = req.body || {};
-  const createdLog = activityService.createActivity(payload);
+  const createdLog = activityService.createActivity(req.body || {});
   res.status(201).json(createdLog);
 }
 

@@ -1,5 +1,10 @@
 import { BACKEND_BASE_URL } from "@/lib/constants";
-import type { ActivityLog, ErrorResponse, Task, TaskResponse, TasksResponse } from "@/types/api";
+import type { ActivityLog, ErrorResponse, Task } from "@/types/api";
+import {
+  activityListResponseSchema,
+  taskResponseSchema,
+  tasksResponseSchema,
+} from "@/lib/schemas";
 
 export class BackendError extends Error {
   status: number;
@@ -54,8 +59,11 @@ export async function getTasksFromBackend(): Promise<Task[]> {
     throw await parseBackendError(response);
   }
 
-  const responseBody = (await response.json()) as TasksResponse;
-  return responseBody.data;
+  const parsed = tasksResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new BackendError("Upstream tasks shape changed.", 502);
+  }
+  return parsed.data.data;
 }
 
 export async function updateTaskInBackend(taskId: string, completed: boolean): Promise<Task> {
@@ -81,8 +89,11 @@ export async function updateTaskInBackend(taskId: string, completed: boolean): P
     throw await parseBackendError(response);
   }
 
-  const responseBody = (await response.json()) as TaskResponse;
-  return responseBody.data;
+  const parsed = taskResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new BackendError("Upstream task shape changed.", 502);
+  }
+  return parsed.data.data;
 }
 
 export async function getActivityFromBackend(): Promise<ActivityLog[]> {
@@ -102,5 +113,9 @@ export async function getActivityFromBackend(): Promise<ActivityLog[]> {
     throw await parseBackendError(response);
   }
 
-  return (await response.json()) as ActivityLog[];
+  const parsed = activityListResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new BackendError("Upstream activity shape changed.", 502);
+  }
+  return parsed.data;
 }
