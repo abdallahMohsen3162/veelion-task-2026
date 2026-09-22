@@ -401,3 +401,12 @@ Entries are appended here as fix branches merge into `main`.
 | # | Finding | Resolution |
 |---|---|---|
 | — | New `/reports` module required by README (totals, by-status, recent activity) | Added `GET /reports/tasks-summary` consumer: `lib/backendApi.getReportsSummaryFromBackend()` (Zod `tasksSummarySchema`), proxy `app/api/reports/route.ts` (forwards status, 502 on shape drift), `app/reports/page.tsx` with `components/reports/StatCard.tsx`, loading (`role="status"`)/error (`role="alert"` + Retry)/empty states, and home-page link. |
+
+### Branch: ui/polish
+
+| # | Finding | Resolution |
+|---|---|---|
+| 1.4 / 12 | Inline style objects recreate each render; magic values bypass tokens | Design-token pass in `app/globals.css` (`--focus`, `--danger-soft`, shadows, radii) with reusable `.card-pad`, `.muted`, `.error-text`, `.error-panel`, `.form-label`, `.form-grid`, `.controls-row`, `.list-reset`, `.row-divider`, `.pagination`, `.stats-grid` utilities; tasks/activity/reports pages and task components migrated to these classes. |
+| 3.5 | Missing disabled/focus affordances | Added `:focus-visible` rings globally, `.button:disabled`, `.button:hover/:active`, `a.card:hover/:active`, `.input:focus`, and `select.input` styling. |
+| 2.5 | Back-navigation markup copy-pasted across pages | New shared `components/common/BackNav.tsx` used by `/tasks`, `/activity`, and `/reports` pages. |
+| 4.5 | `NEXT_PUBLIC_` used for server-only config | `lib/constants.ts` now prefers `BACKEND_API_URL` with legacy `NEXT_PUBLIC_BACKEND_API_URL` fallback; `.env.example` updated. |

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BackNav } from "@/components/common/BackNav";
 import type { ActivityLog, PaginatedActivityResponse, PaginationMeta } from "@/types/api";
 import { activityPaginatedResponseSchema } from "@/lib/schemas";
 
@@ -108,17 +108,13 @@ export default function ActivityPage() {
 
   return (
     <main className="stack">
-      <nav>
-        <Link href="/" className="button">
-          Back
-        </Link>
-      </nav>
+      <BackNav />
 
-      <section className="card" style={{ padding: "1rem", display: "grid", gap: "0.75rem" }}>
-        <h1 style={{ marginTop: 0, marginBottom: 0 }}>Activity Feed</h1>
+      <section className="card card-pad form-grid">
+        <h1 className="page-title" style={{ marginBottom: 0 }}>Activity Feed</h1>
 
         <div>
-          <label htmlFor="activity-search" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>
+          <label htmlFor="activity-search" className="form-label">
             Search activity
           </label>
           <input
@@ -131,9 +127,9 @@ export default function ActivityPage() {
           />
         </div>
 
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div className="controls-row">
           <div>
-            <label htmlFor="activity-sort" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+            <label htmlFor="activity-sort" className="form-label">
               Sort by
             </label>
             <select
@@ -151,7 +147,7 @@ export default function ActivityPage() {
           </div>
 
           <div>
-            <label htmlFor="activity-order" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+            <label htmlFor="activity-order" className="form-label">
               Order
             </label>
             <select
@@ -169,7 +165,7 @@ export default function ActivityPage() {
           </div>
 
           <div>
-            <label htmlFor="activity-limit" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+            <label htmlFor="activity-limit" className="form-label">
               Per page
             </label>
             <select
@@ -189,49 +185,35 @@ export default function ActivityPage() {
         </div>
       </section>
 
-      <section className="card" style={{ padding: "1rem" }}>
-        <small style={{ color: "var(--muted)" }}>
+      <section className="card card-pad">
+        <small className="muted">
           Total: {meta.total} | Page {meta.page} of {Math.max(meta.totalPages, 1)}
         </small>
       </section>
 
-      <section className="card" style={{ padding: "1rem" }}>
+      <section className="card card-pad">
         {loading ? (
-          <p role="status" style={{ color: "var(--muted)", margin: 0 }}>
+          <p role="status" className="muted" style={{ margin: 0 }}>
             Loading activity…
           </p>
         ) : error ? (
           <div role="alert">
-            <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.75rem" }}>{error}</p>
+            <p className="error-text" style={{ marginTop: 0, marginBottom: "0.75rem" }}>{error}</p>
             <button type="button" className="button" onClick={handleRetry}>
               Retry
             </button>
           </div>
         ) : logs.length === 0 ? (
-          <p style={{ color: "var(--muted)", margin: 0 }}>
+          <p className="muted" style={{ margin: 0 }}>
             {search ? "No activity matches your search." : "No activity yet."}
           </p>
         ) : (
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              display: "grid",
-              gap: "0.7rem",
-            }}
-          >
+          <ul className="list-reset">
             {logs.map((item) => (
-              <li
-                key={item.id}
-                style={{
-                  borderBottom: "1px solid var(--border)",
-                  paddingBottom: "0.6rem",
-                }}
-              >
+              <li key={item.id} className="row-divider">
                 <div style={{ fontWeight: 600 }}>{item.action || "(no action)"}</div>
                 <div>{item.info || "(no info)"}</div>
-                <small style={{ color: "var(--muted)" }}>
+                <small className="muted">
                   {formatTimestamp(item.when)}
                 </small>
               </li>
@@ -241,11 +223,7 @@ export default function ActivityPage() {
       </section>
 
       {!loading && !error && meta.totalPages > 1 ? (
-        <section
-          className="card"
-          style={{ padding: "0.8rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}
-          aria-label="Activity pagination"
-        >
+        <section className="card card-pad pagination" aria-label="Activity pagination">
           <button
             type="button"
             className="button"
@@ -254,7 +232,7 @@ export default function ActivityPage() {
           >
             Previous
           </button>
-          <small style={{ color: "var(--muted)" }}>
+          <small className="muted">
             Page {meta.page} of {meta.totalPages}
           </small>
           <button
