@@ -431,3 +431,9 @@ Entries are appended here as fix branches merge into `main`.
 | # | Finding | Resolution |
 |---|---|---|
 | ARCH-1 | Frontend kept its own `app/api/*` proxy routes in front of Express — every request took 2 steps (browser → Next.js → Express) instead of 1, doubling latency/failure surface and forcing status remapping | Deleted `frontend/app/api/` entirely (all 4 proxy routes); the frontend now depends on the backend only — `useTasks`, the Activity page, and the Reports page fetch Express directly via `BACKEND_BASE_URL` (`NEXT_PUBLIC_BACKEND_API_URL` first, `BACKEND_API_URL` fallback). Added dependency-free CORS middleware in `backend/src/app.js` (`*` origin, `GET/POST/PATCH/DELETE/OPTIONS`, preflight `204`); removed the now-dead `getUpstreamStatus` proxy helper; `.env.example`/`.env.local` updated to the public variable. Verified `tsc` clean and `next build` serves 7 routes with 0 `/api/*` routes left. |
+
+### Branch: feat/add-task
+
+| # | Finding | Resolution |
+|---|---|---|
+| FEAT-1 | No way to add a task — backend `POST /tasks` existed but the UI had zero create affordance | Backend needed no changes (verified live: `POST /tasks` → `201 {data}`, blank title → `400` with details, `DELETE` → `204`). Frontend: new `createTaskPayloadSchema` in `lib/schemas.ts` (trimmed title, 1–200 chars, strict — mirrors backend), new `createTask()` in `useTasks` (`POST` straight to Express, Zod-validated both ways, `creating` state, jumps to page 1 and reloads so the new task surfaces first), and new memoized `components/tasks/TaskCreateForm.tsx` (labeled input, inline `role="alert"` empty-title message, primary submit disabled while creating) wired at the top of `TaskDashboard`. Verified `tsc`, `next build`, `/tasks` renders the form, and create → list-first → delete works end to end via the exact UI code path. |

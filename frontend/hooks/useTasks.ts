@@ -11,6 +11,7 @@ import type {
   TaskResponse,
 } from "@/types/api";
 import {
+  createTaskPayloadSchema,
   taskResponseSchema,
   tasksPaginatedResponseSchema,
   updateTaskPayloadSchema,
@@ -92,6 +93,7 @@ export function useTasks() {
   const [limit, setLimitState] = useState(10);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [creating, setCreating] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(new Set());
 
@@ -212,6 +214,56 @@ export function useTasks() {
     setPageState(1);
   }, []);
 
+  const createTask = useCallback(async (title: string): Promise<Task | null> => {
+    const parsedPayload = createTaskPayloadSchema.safeParse({ title });
+    if (!parsedPayload.success) {
+      if (isMountedRef.current) {
+        setError(parsedPayload.error.issues[0]?.message || "Invalid task title.");
+      }
+      return null;
+    }
+
+    setCreating(true);
+    if (isMountedRef.current) {
+      setError("");
+    }
+
+    try {
+      const rawTask = await requestJson<TaskResponse>(`${BACKEND_BASE_URL}/tasks`, {
+        method: "POST",
+        body: JSON.stringify(parsedPayload.data),
+      });
+
+      const parsedTask = taskResponseSchema.safeParse(rawTask);
+      if (!parsedTask.success) {
+        throw new Error("Task response changed shape.");
+      }
+
+      if (!isMountedRef.current) {
+        return null;
+      }
+
+      // Newest-first default sort puts the created task on top: jump to page 1 and reload.
+      queryRef.current = { ...queryRef.current, page: 1 };
+      setPageState(1);
+      await fetchTasks();
+      return parsedTask.data.data;
+    } catch (error) {
+      if (!isMountedRef.current) {
+        return null;
+      }
+      if (isAbortError(error)) {
+        return null;
+      }
+      setError(getErrorMessage(error, "Could not create task."));
+      return null;
+    } finally {
+      if (isMountedRef.current) {
+        setCreating(false);
+      }
+    }
+  }, [fetchTasks]);
+
   const updateTaskStatus = useCallback(async (taskId: string, completed: boolean) => {
     const parsedPayload = updateTaskPayloadSchema.safeParse({ completed });
     if (!parsedPayload.success) {
@@ -278,6 +330,7 @@ export function useTasks() {
     limit,
     loading,
     refreshing,
+    creating,
     error,
     updatingTaskIds,
     setFilter,
@@ -287,6 +340,7 @@ export function useTasks() {
     setPage,
     setLimit,
     fetchTasks,
+    createTask,
     updateTaskStatus,
   };
 }
