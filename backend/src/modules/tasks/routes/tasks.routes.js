@@ -8,13 +8,18 @@ const {
   taskIdParamsSchema,
   createTaskBodySchema,
   updateTaskBodySchema,
+  listTasksQuerySchema,
 } = require('../validation/tasks.validation');
 
 const tasksRouter = express.Router();
 
 tasksRouter.use(cacheMiddleware);
 
-tasksRouter.get('/', asyncHandler(tasksController.listTasks));
+tasksRouter.get(
+  '/',
+  validate({ query: listTasksQuerySchema }),
+  asyncHandler(tasksController.listTasks)
+);
 tasksRouter.get(
   '/:id',
   validate({ params: taskIdParamsSchema }),

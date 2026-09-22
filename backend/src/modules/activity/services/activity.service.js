@@ -16,8 +16,52 @@ function readActivityStore() {
   return JSON.parse(raw);
 }
 
+function compareActivityLogs(a, b, sort, order) {
+  let result = 0;
+
+  if (sort === 'action') {
+    result = String(a.action || '').localeCompare(String(b.action || ''));
+  } else {
+    result = String(a.when || '').localeCompare(String(b.when || ''));
+  }
+
+  return order === 'asc' ? result : -result;
+}
+
 function listActivityLogs() {
   return readActivityStore();
+}
+
+function queryActivityLogs(options) {
+  const search = ((options && options.search) || '').trim().toLowerCase();
+  const sort = (options && options.sort) || 'when';
+  const order = (options && options.order) || 'desc';
+  const page = (options && options.page) || 1;
+  const limit = (options && options.limit) || 20;
+
+  const entries = readActivityStore();
+
+  const filtered = entries.filter((item) => {
+    if (!search) {
+      return true;
+    }
+
+    const action = String(item.action || '').toLowerCase();
+    const info = String(item.info || '').toLowerCase();
+    return action.includes(search) || info.includes(search);
+  });
+
+  const sorted = [...filtered].sort((a, b) => compareActivityLogs(a, b, sort, order));
+
+  const total = sorted.length;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+  const start = (page - 1) * limit;
+  const data = sorted.slice(start, start + limit);
+
+  return {
+    data,
+    meta: { page, limit, total, totalPages },
+  };
 }
 
 function createActivity(payload) {
@@ -36,5 +80,6 @@ function createActivity(payload) {
 
 module.exports = {
   listActivityLogs,
+  queryActivityLogs,
   createActivity,
 };

@@ -1,9 +1,17 @@
 import { BACKEND_BASE_URL } from "@/lib/constants";
-import type { ActivityLog, ErrorResponse, Task } from "@/types/api";
+import type {
+  ActivityLog,
+  ActivityQueryParams,
+  ErrorResponse,
+  PaginatedActivityResponse,
+  PaginatedTasksResponse,
+  Task,
+  TasksQueryParams,
+} from "@/types/api";
 import {
-  activityListResponseSchema,
+  activityPaginatedResponseSchema,
   taskResponseSchema,
-  tasksResponseSchema,
+  tasksPaginatedResponseSchema,
 } from "@/lib/schemas";
 
 export class BackendError extends Error {
@@ -27,8 +35,18 @@ export function getUpstreamStatus(error: unknown, fallback = 500): number {
   return fallback;
 }
 
-function buildBackendUrl(path: string): string {
-  return `${BACKEND_BASE_URL}${path}`;
+function buildBackendUrl(path: string, params?: Record<string, string | number | undefined>): string {
+  if (!params) {
+    return `${BACKEND_BASE_URL}${path}`;
+  }
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") {
+      search.set(key, String(value));
+    }
+  }
+  const query = search.toString();
+  return query ? `${BACKEND_BASE_URL}${path}?${query}` : `${BACKEND_BASE_URL}${path}`;
 }
 
 async function parseBackendError(response: Response): Promise<BackendError> {
@@ -42,10 +60,12 @@ async function parseBackendError(response: Response): Promise<BackendError> {
   }
 }
 
-export async function getTasksFromBackend(): Promise<Task[]> {
+export async function getTasksFromBackend(
+  params?: TasksQueryParams
+): Promise<PaginatedTasksResponse> {
   let response: Response;
   try {
-    response = await fetch(buildBackendUrl("/tasks"), {
+    response = await fetch(buildBackendUrl("/tasks", params as Record<string, string | number | undefined>), {
       cache: "no-store",
     });
   } catch (error) {
@@ -59,11 +79,11 @@ export async function getTasksFromBackend(): Promise<Task[]> {
     throw await parseBackendError(response);
   }
 
-  const parsed = tasksResponseSchema.safeParse(await response.json());
+  const parsed = tasksPaginatedResponseSchema.safeParse(await response.json());
   if (!parsed.success) {
     throw new BackendError("Upstream tasks shape changed.", 502);
   }
-  return parsed.data.data;
+  return parsed.data;
 }
 
 export async function updateTaskInBackend(taskId: string, completed: boolean): Promise<Task> {
@@ -96,12 +116,17 @@ export async function updateTaskInBackend(taskId: string, completed: boolean): P
   return parsed.data.data;
 }
 
-export async function getActivityFromBackend(): Promise<ActivityLog[]> {
+export async function getActivityFromBackend(
+  params?: ActivityQueryParams
+): Promise<PaginatedActivityResponse> {
   let response: Response;
   try {
-    response = await fetch(buildBackendUrl("/activity"), {
-      cache: "no-store",
-    });
+    response = await fetch(
+      buildBackendUrl("/activity", params as Record<string, string | number | undefined>),
+      {
+        cache: "no-store",
+      }
+    );
   } catch (error) {
     throw new BackendError(
       error instanceof Error ? error.message : "Failed to load activity logs.",
@@ -113,9 +138,11 @@ export async function getActivityFromBackend(): Promise<ActivityLog[]> {
     throw await parseBackendError(response);
   }
 
-  const parsed = activityListResponseSchema.safeParse(await response.json());
+  const parsed = activityPaginatedResponseSchema.safeParse(await response.json());
   if (!parsed.success) {
     throw new BackendError("Upstream activity shape changed.", 502);
   }
   return parsed.data;
 }
+
+export type { ActivityLog, Task };
