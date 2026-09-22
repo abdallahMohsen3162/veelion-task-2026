@@ -48,6 +48,16 @@ export const updateTaskPayloadSchema = z
   })
   .strict();
 
+export const createTaskPayloadSchema = z
+  .object({
+    title: z
+      .string({ required_error: "title is required and must be string" })
+      .trim()
+      .min(1, "title cannot be empty")
+      .max(200, "title is too long"),
+  })
+  .strict();
+
 export const tasksSummarySchema = z.object({
   total: z.number(),
   byStatus: z.object({

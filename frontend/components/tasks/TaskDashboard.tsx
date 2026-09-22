@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { SortOrderToggle } from "@/components/common/SortOrderToggle";
 import { useTasks } from "@/hooks/useTasks";
 import { StatusFilter } from "@/components/tasks/StatusFilter";
+import { TaskCreateForm } from "@/components/tasks/TaskCreateForm";
 import { TaskList } from "@/components/tasks/TaskList";
 
 export function TaskDashboard() {
@@ -18,6 +19,7 @@ export function TaskDashboard() {
     limit,
     loading,
     refreshing,
+    creating,
     error,
     updatingTaskIds,
     setFilter,
@@ -27,6 +29,7 @@ export function TaskDashboard() {
     setPage,
     setLimit,
     fetchTasks,
+    createTask,
     updateTaskStatus,
   } = useTasks();
 
@@ -51,6 +54,8 @@ export function TaskDashboard() {
           </small>
         ) : null}
       </header>
+
+      <TaskCreateForm creating={creating} onCreate={createTask} />
 
       <section className="card card-pad form-grid">
         <div>
