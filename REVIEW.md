@@ -364,3 +364,15 @@ Entries are appended here as fix branches merge into `main`.
 | 8 | No loading/error/empty states on Activity | Added loading (`role="status"`), error (`role="alert"` + Retry), and search-aware empty states. |
 | 3.7 / 5.5 | Search input had no accessible label; status regions had no live roles | Added `<label for="activity-search">` + `type="search"` + `aria-label` path; loading uses `role="status"`, errors use `role="alert"`. |
 | 10 | Remaining activity-page names (`tick`, `forcedList`, `formatTimeA/B`, `applyFilterA/B`) | Removed/renamed as part of the rewrite (`filterActivityLogs`, `formatTimestamp`, `shownActivity`). |
+
+### Branch: fix/tasks-error-handling
+
+| # | Finding | Resolution |
+|---|---|---|
+| 3 | Update error unmounts entire task list (`TaskDashboard.tsx:47`) | Dashboard keeps the list mounted when tasks exist; error renders as a banner alongside the list with Retry. Full-page error is reserved for initial-load failure (`tasks.length === 0`). Added `refreshing` indicator for background refetches. |
+| 5.1 | `updatingTaskId` single-id race + no cancellation (`useTasks.ts`) | Replaced string flag with `updatingTaskIds: Set<string>` (per-id add/delete, `memo` `TaskItem`); added `AbortController` + sequence guard + mounted guard to ignore stale/superseded fetches and unmount updates. |
+| 5.4 | Retry blanks the UI (`loading` hides data) | Split `loading` (initial) from `refreshing` (background); list stays visible on retry when data exists. |
+| 5 | Proxy routes flatten all failures to 500 | `lib/backendApi.ts` now throws typed `BackendError(status)` preserving upstream codes (502 for network); `app/api/tasks`, `app/api/tasks/[id]`, `app/api/activity` forward `error.status`, return 400 for malformed JSON, and only use generic 500 for unknown failures. |
+| 14 | Missing `encodeURIComponent` on dynamic segments | Added in `updateTaskInBackend()` and `useTasks.updateTaskStatus()` (`/api/tasks/${encodeURIComponent(taskId)}`). |
+| 5.3 | Inline handlers defeat memoization | `TaskDashboard.handleToggle` is `useCallback` on `(taskId, nextCompleted)` primitives; `TaskItem` is `memo` with internal `useCallback` click; `StatusFilter` uses memoized `FilterButton` children. |
+| 3.6 / 5.5 | Wrong empty copy; missing live roles on tasks | `TaskList` distinguishes "No tasks yet…" vs "No tasks match this filter."; loading uses `role="status"`, errors use `role="alert"`. |
