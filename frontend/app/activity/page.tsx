@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BackNav } from "@/components/common/BackNav";
 import { SortOrderToggle } from "@/components/common/SortOrderToggle";
+import { BACKEND_BASE_URL } from "@/lib/constants";
 import type { ActivityLog, PaginatedActivityResponse, PaginationMeta } from "@/types/api";
 import { activityPaginatedResponseSchema } from "@/lib/schemas";
 
@@ -28,7 +29,7 @@ async function fetchActivityLogs(
   query.set("page", String(params.page));
   query.set("limit", String(params.limit));
 
-  const response = await fetch(`/api/activity?${query.toString()}`, { signal });
+  const response = await fetch(`${BACKEND_BASE_URL}/activity?${query.toString()}`, { signal });
 
   if (!response.ok) {
     let message = `Request failed with ${response.status}`;
