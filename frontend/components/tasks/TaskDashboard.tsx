@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { SortOrderToggle } from "@/components/common/SortOrderToggle";
 import { useTasks } from "@/hooks/useTasks";
 import { StatusFilter } from "@/components/tasks/StatusFilter";
 import { TaskList } from "@/components/tasks/TaskList";
@@ -77,8 +78,8 @@ export function TaskDashboard() {
               value={sort}
               onChange={(event) => setSort(event.target.value as "createdAt" | "updatedAt" | "title")}
             >
-              <option value="createdAt">Created</option>
-              <option value="updatedAt">Updated</option>
+              <option value="updatedAt">Time (last updated)</option>
+              <option value="createdAt">Time (created)</option>
               <option value="title">Title</option>
             </select>
           </div>
@@ -87,15 +88,13 @@ export function TaskDashboard() {
             <label htmlFor="task-order" className="form-label">
               Order
             </label>
-            <select
+            <SortOrderToggle
               id="task-order"
-              className="input"
               value={order}
-              onChange={(event) => setOrder(event.target.value as "asc" | "desc")}
-            >
-              <option value="desc">Newest first</option>
-              <option value="asc">Oldest first</option>
-            </select>
+              onChange={setOrder}
+              ascLabel="Oldest first"
+              descLabel="Newest first"
+            />
           </div>
 
           <div>

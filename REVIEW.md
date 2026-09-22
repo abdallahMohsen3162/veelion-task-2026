@@ -410,3 +410,11 @@ Entries are appended here as fix branches merge into `main`.
 | 3.5 | Missing disabled/focus affordances | Added `:focus-visible` rings globally, `.button:disabled`, `.button:hover/:active`, `a.card:hover/:active`, `.input:focus`, and `select.input` styling. |
 | 2.5 | Back-navigation markup copy-pasted across pages | New shared `components/common/BackNav.tsx` used by `/tasks`, `/activity`, and `/reports` pages. |
 | 4.5 | `NEXT_PUBLIC_` used for server-only config | `lib/constants.ts` now prefers `BACKEND_API_URL` with legacy `NEXT_PUBLIC_BACKEND_API_URL` fallback; `.env.example` updated. |
+
+### Branch: fix/ui-status-sorting
+
+| # | Finding | Resolution |
+|---|---|---|
+| UI-1 | No status coloring (pending must read yellow, etc.) | Status badges are now color-coded via design tokens: `Pending` uses yellow (`.badge-pending`: `--pending-bg`/`--pending-text`/`--pending-border`), `Completed` uses green (`.badge-completed`). `TaskItem.tsx` applies the variant conditionally. |
+| UI-2 | Sorting must default to time with other options selectable | Tasks default sort is now time (`updatedAt` desc) on both layers: `useTasks` initial sort `createdAt` → `updatedAt`, backend `listTasksQuerySchema`/`queryTasks` fallback `createdAt` → `updatedAt`; docs updated. Sort-field dropdowns are kept and relabeled so time is explicit (`Time (last updated)` / `Time (created)` / `Title` on tasks; `Time` / `Action` on activity, default `when`). |
+| UI-3 | Sort-order select must be arrows, not text | Text `Order` dropdowns replaced with a shared arrow toggle (`components/common/SortOrderToggle.tsx`): `↓` = newest first (`desc`), `↑` = oldest first (`asc`), with `aria-label`/`title` (`Newest first`/`Oldest first`) and `aria-pressed`. Wired into `TaskDashboard` and the Activity page; text selects removed. |
