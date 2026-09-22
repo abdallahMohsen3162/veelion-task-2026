@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BACKEND_BASE_URL } from "@/lib/constants";
 import type {
   ErrorResponse,
   PaginatedTasksResponse,
@@ -77,7 +78,7 @@ function buildTasksUrl(
   params.set("order", order);
   params.set("page", String(page));
   params.set("limit", String(limit));
-  return `/api/tasks?${params.toString()}`;
+  return `${BACKEND_BASE_URL}/tasks?${params.toString()}`;
 }
 
 export function useTasks() {
@@ -227,7 +228,7 @@ export function useTasks() {
 
     try {
       const rawTask = await requestJson<TaskResponse>(
-        `/api/tasks/${encodeURIComponent(taskId)}`,
+        `${BACKEND_BASE_URL}/tasks/${encodeURIComponent(taskId)}`,
         {
           method: "PATCH",
           body: JSON.stringify(parsedPayload.data),

@@ -26,17 +26,6 @@ export class BackendError extends Error {
   }
 }
 
-export function getUpstreamStatus(error: unknown, fallback = 500): number {
-  if (error instanceof BackendError && Number.isInteger(error.status)) {
-    return error.status;
-  }
-  const status = (error as { status?: unknown })?.status;
-  if (typeof status === "number" && Number.isInteger(status)) {
-    return status;
-  }
-  return fallback;
-}
-
 function buildBackendUrl(path: string, params?: Record<string, string | number | undefined>): string {
   if (!params) {
     return `${BACKEND_BASE_URL}${path}`;

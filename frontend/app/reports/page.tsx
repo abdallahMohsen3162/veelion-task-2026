@@ -5,6 +5,7 @@ import { BackNav } from "@/components/common/BackNav";
 import { CompletionDonut } from "@/components/reports/CompletionDonut";
 import { StatCard } from "@/components/reports/StatCard";
 import { StatusBars } from "@/components/reports/StatusBars";
+import { BACKEND_BASE_URL } from "@/lib/constants";
 import { tasksSummarySchema } from "@/lib/schemas";
 import type { TasksSummary } from "@/types/api";
 
@@ -16,7 +17,7 @@ export default function ReportsPage() {
   const loadReports = useCallback(async (signal: AbortSignal) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/reports", { signal });
+      const response = await fetch(`${BACKEND_BASE_URL}/reports/tasks-summary`, { signal });
       if (!response.ok) {
         let message = `Request failed with ${response.status}`;
         try {
