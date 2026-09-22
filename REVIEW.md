@@ -354,3 +354,13 @@ Entries are appended here as fix branches merge into `main`.
 | # | Finding | Resolution |
 |---|---|---|
 | 10 | Misleading names (`get_activity`, `aSvc`, `loadDataA/B`, `removeTask`, `router`, `t`, `body`, dead `taskValidator.js`) | Renamed activity service API to `readActivityStore`/`listActivityLogs`/`createActivity`; controller exports `getActivity`/`createActivity`; `removeTask` ? `deleteTask`; reports `router` ? `reportsRouter`, `t` ? `task`; frontend `body` ? `response` in `useTasks.ts`; deleted dead `backend/src/modules/tasks/utils/taskValidator.js`. Remaining activity-page names (`tick`, `forcedList`, `formatTimeA/B`, `applyFilterA/B`) deferred to the activity-feed branch. |
+
+### Branch: refactor/activity-feed
+
+| # | Finding | Resolution |
+|---|---|---|
+| 1 | Activity page crashes on API error (no `ok` check); re-render loop (`tick`/`setInterval`/`forcedList`); triple overlapping states (all/filtered/forced) | Rewrote `frontend/app/activity/page.tsx`: fetch once from `/api/activity` with `response.ok` check and `AbortController` cleanup; single `loading`/`error`/`allActivity` source of truth derived via `useMemo`; removed `tick`, `setInterval`, and `forcedList`. |
+| 7 | Duplicated `formatTimeA/B` + `applyFilterA/B`; timestamp shown twice per item | Deduplicated to single `formatTimestamp` and `filterActivityLogs` (memoized via `useMemo`); one timestamp rendered per item. |
+| 8 | No loading/error/empty states on Activity | Added loading (`role="status"`), error (`role="alert"` + Retry), and search-aware empty states. |
+| 3.7 / 5.5 | Search input had no accessible label; status regions had no live roles | Added `<label for="activity-search">` + `type="search"` + `aria-label` path; loading uses `role="status"`, errors use `role="alert"`. |
+| 10 | Remaining activity-page names (`tick`, `forcedList`, `formatTimeA/B`, `applyFilterA/B`) | Removed/renamed as part of the rewrite (`filterActivityLogs`, `formatTimestamp`, `shownActivity`). |
