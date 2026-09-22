@@ -376,3 +376,10 @@ Entries are appended here as fix branches merge into `main`.
 | 14 | Missing `encodeURIComponent` on dynamic segments | Added in `updateTaskInBackend()` and `useTasks.updateTaskStatus()` (`/api/tasks/${encodeURIComponent(taskId)}`). |
 | 5.3 | Inline handlers defeat memoization | `TaskDashboard.handleToggle` is `useCallback` on `(taskId, nextCompleted)` primitives; `TaskItem` is `memo` with internal `useCallback` click; `StatusFilter` uses memoized `FilterButton` children. |
 | 3.6 / 5.5 | Wrong empty copy; missing live roles on tasks | `TaskList` distinguishes "No tasks yet…" vs "No tasks match this filter."; loading uses `role="status"`, errors use `role="alert"`. |
+
+### Branch: feat/validation
+
+| # | Finding | Resolution |
+|---|---|---|
+| 6 | Validation triplicated with conflicting rules (+ dead `taskValidator.js`) | Single source via Zod: `backend/src/middleware/validate.js` + `tasks.validation.js` (`createTaskBodySchema`/`updateTaskBodySchema` with `.trim()`, `.strict()`, `refine` for empty patch) + `activity.validation.js`; controllers are thin (`req.body` is already parsed/trimmed), service-layer duplicate checks removed. Unknown keys now 400 via `.strict()` instead of hand-rolled `ensureNoUnknownFields`; trimming via Zod instead of `normalizeTitleIfPresent`. |
+| 2.7 | Unsafe `as` casts instead of validation | Frontend `lib/schemas.ts` (Zod) validates at boundaries: `backendApi.ts` uses `safeParse` for tasks/activity responses (throws `BackendError(502)` on shape drift); proxy routes validate upstream payloads and client `PATCH` bodies (`updateTaskPayloadSchema`); `useTasks` validates outgoing updates and incoming lists before setting state. |

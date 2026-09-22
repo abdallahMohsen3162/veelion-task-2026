@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ErrorResponse, Task, TaskFilter, TaskResponse, TasksResponse } from "@/types/api";
+import {
+  taskResponseSchema,
+  tasksResponseSchema,
+  updateTaskPayloadSchema,
+} from "@/lib/schemas";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
@@ -81,10 +86,15 @@ export function useTasks() {
         setError("");
       }
 
-      const taskResponse = await requestJson<TasksResponse>("/api/tasks", {
+      const rawTasks = await requestJson<TasksResponse>("/api/tasks", {
         method: "GET",
         signal: controller.signal,
       });
+
+      const parsedTasks = tasksResponseSchema.safeParse(rawTasks);
+      if (!parsedTasks.success) {
+        throw new Error("Tasks response changed shape.");
+      }
 
       if (!isMountedRef.current || controller.signal.aborted) {
         return;
@@ -93,7 +103,7 @@ export function useTasks() {
         return;
       }
 
-      setTasks(taskResponse.data);
+      setTasks(parsedTasks.data.data);
       hasLoadedRef.current = true;
     } catch (error) {
       if (!isMountedRef.current || controller.signal.aborted || isAbortError(error)) {
@@ -119,26 +129,39 @@ export function useTasks() {
   }, []);
 
   const updateTaskStatus = useCallback(async (taskId: string, completed: boolean) => {
+    const parsedPayload = updateTaskPayloadSchema.safeParse({ completed });
+    if (!parsedPayload.success) {
+      if (isMountedRef.current) {
+        setError(parsedPayload.error.issues[0]?.message || "Invalid update.");
+      }
+      return;
+    }
+
     setUpdatingTaskIds((previous) => new Set(previous).add(taskId));
     if (isMountedRef.current) {
       setError("");
     }
 
     try {
-      const taskResponse = await requestJson<TaskResponse>(
+      const rawTask = await requestJson<TaskResponse>(
         `/api/tasks/${encodeURIComponent(taskId)}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ completed }),
+          body: JSON.stringify(parsedPayload.data),
         }
       );
+
+      const parsedTask = taskResponseSchema.safeParse(rawTask);
+      if (!parsedTask.success) {
+        throw new Error("Task response changed shape.");
+      }
 
       if (!isMountedRef.current) {
         return;
       }
 
       setTasks((previous) =>
-        previous.map((task) => (task.id === taskId ? taskResponse.data : task))
+        previous.map((task) => (task.id === taskId ? parsedTask.data.data : task))
       );
     } catch (error) {
       if (!isMountedRef.current) {

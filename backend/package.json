@@ -8,6 +8,7 @@
         "dev": "node --watch src/server.js"
     },
     "dependencies": {
-        "express": "^4.19.2"
+        "express": "^4.19.2",
+        "zod": "^3.23.8"
     }
 }
