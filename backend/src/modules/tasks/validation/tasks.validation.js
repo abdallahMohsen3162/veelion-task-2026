@@ -33,7 +33,7 @@ const updateTaskBodySchema = z
 const listTasksQuerySchema = z.object({
   search: z.string().trim().max(200).optional().default(''),
   status: z.enum(['all', 'completed', 'pending', 'todo', 'done']).optional().default('all'),
-  sort: z.enum(['createdAt', 'updatedAt', 'title']).optional().default('createdAt'),
+  sort: z.enum(['createdAt', 'updatedAt', 'title']).optional().default('updatedAt'),
   order: z.enum(['asc', 'desc']).optional().default('desc'),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),

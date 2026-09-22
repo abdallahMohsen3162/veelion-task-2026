@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BackNav } from "@/components/common/BackNav";
+import { SortOrderToggle } from "@/components/common/SortOrderToggle";
 import type { ActivityLog, PaginatedActivityResponse, PaginationMeta } from "@/types/api";
 import { activityPaginatedResponseSchema } from "@/lib/schemas";
 
@@ -150,18 +151,16 @@ export default function ActivityPage() {
             <label htmlFor="activity-order" className="form-label">
               Order
             </label>
-            <select
+            <SortOrderToggle
               id="activity-order"
-              className="input"
               value={order}
-              onChange={(event) => {
-                setOrder(event.target.value as SortOrder);
+              onChange={(value) => {
+                setOrder(value);
                 setPage(1);
               }}
-            >
-              <option value="desc">Newest first</option>
-              <option value="asc">Oldest first</option>
-            </select>
+              ascLabel="Oldest first"
+              descLabel="Newest first"
+            />
           </div>
 
           <div>

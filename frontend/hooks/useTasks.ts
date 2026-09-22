@@ -85,7 +85,7 @@ export function useTasks() {
   const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
   const [filter, setFilterState] = useState<TaskFilter>("all");
   const [search, setSearchState] = useState("");
-  const [sort, setSortState] = useState<TasksSortField>("createdAt");
+  const [sort, setSortState] = useState<TasksSortField>("updatedAt");
   const [order, setOrderState] = useState<SortOrder>("desc");
   const [page, setPageState] = useState(1);
   const [limit, setLimitState] = useState(10);

@@ -24,7 +24,7 @@ Query params (all optional):
 type ListTasksQuery = {
   search?: string; // case-insensitive match on title, max 200
   status?: "all" | "completed" | "pending" | "todo" | "done"; // default "all" ("todo" = pending, "done" = completed)
-  sort?: "createdAt" | "updatedAt" | "title"; // default "createdAt"
+  sort?: "createdAt" | "updatedAt" | "title"; // default "updatedAt" (time)
   order?: "asc" | "desc"; // default "desc"
   page?: number; // >= 1, default 1
   limit?: number; // 1-100, default 20

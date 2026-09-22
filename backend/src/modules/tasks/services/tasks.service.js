@@ -52,7 +52,7 @@ async function getAllTasks() {
 async function queryTasks(options) {
   const search = (options.search || '').trim().toLowerCase();
   const status = options.status || 'all';
-  const sort = options.sort || 'createdAt';
+  const sort = options.sort || 'updatedAt';
   const order = options.order || 'desc';
   const page = options.page || 1;
   const limit = options.limit || 20;

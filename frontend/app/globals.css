@@ -12,6 +12,12 @@
   --danger-soft: #fff8fa;
   --danger-border: #e3b4c0;
   --chip: #f1f4f6;
+  --pending-bg: #fef3c7;
+  --pending-text: #92400e;
+  --pending-border: #fcd34a;
+  --completed-bg: #dcfce7;
+  --completed-text: #166534;
+  --completed-border: #86efac;
   --focus: #2a7fff;
   --radius: 10px;
   --radius-sm: 8px;
@@ -126,8 +132,27 @@ a.card:active {
   border: 1px solid var(--border);
   padding: 0.2rem 0.65rem;
   font-size: 0.75rem;
+  font-weight: 600;
   background: var(--chip);
   white-space: nowrap;
+}
+
+.badge-pending {
+  background: var(--pending-bg);
+  border-color: var(--pending-border);
+  color: var(--pending-text);
+}
+
+.badge-completed {
+  background: var(--completed-bg);
+  border-color: var(--completed-border);
+  color: var(--completed-text);
+}
+
+.order-toggle {
+  min-width: 3rem;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .input {
