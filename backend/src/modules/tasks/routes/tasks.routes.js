@@ -1,6 +1,7 @@
 const express = require('express');
 
 const asyncHandler = require('../../../middleware/asyncHandler');
+const { cacheMiddleware } = require('../../../middleware/cache');
 const { validate } = require('../../../middleware/validate');
 const tasksController = require('../controllers/tasks.controller');
 const {
@@ -10,6 +11,8 @@ const {
 } = require('../validation/tasks.validation');
 
 const tasksRouter = express.Router();
+
+tasksRouter.use(cacheMiddleware);
 
 tasksRouter.get('/', asyncHandler(tasksController.listTasks));
 tasksRouter.get(
