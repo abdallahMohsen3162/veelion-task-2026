@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BackNav } from "@/components/common/BackNav";
 import { StatCard } from "@/components/reports/StatCard";
 import { tasksSummarySchema } from "@/lib/schemas";
 import type { TasksSummary } from "@/types/api";
@@ -67,64 +67,48 @@ export default function ReportsPage() {
 
   return (
     <main className="stack">
-      <nav>
-        <Link href="/" className="button">
-          Back
-        </Link>
-      </nav>
+      <BackNav />
 
-      <header className="card" style={{ padding: "1rem" }}>
-        <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Reports</h1>
-        <p style={{ margin: 0, color: "var(--muted)" }}>
+      <header className="card card-pad">
+        <h1 className="page-title">Reports</h1>
+        <p className="muted" style={{ margin: 0 }}>
           Task totals, status breakdown, and recent activity.
         </p>
       </header>
 
       {loading ? (
-        <section className="card" style={{ padding: "1rem" }}>
-          <p role="status" style={{ margin: 0, color: "var(--muted)" }}>
+        <section className="card card-pad">
+          <p role="status" className="muted" style={{ margin: 0 }}>
             Loading reports…
           </p>
         </section>
       ) : error ? (
-        <section className="card" style={{ padding: "1rem" }}>
+        <section className="card card-pad">
           <div role="alert">
-            <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.75rem" }}>{error}</p>
+            <p className="error-text" style={{ marginTop: 0, marginBottom: "0.75rem" }}>{error}</p>
             <button type="button" className="button" onClick={handleRetry}>
               Retry
             </button>
           </div>
         </section>
       ) : summary && summary.total === 0 ? (
-        <section className="card" style={{ padding: "1rem" }}>
-          <p style={{ margin: 0, color: "var(--muted)" }}>
+        <section className="card card-pad">
+          <p className="muted" style={{ margin: 0 }}>
             No tasks yet. Create your first task to see reports.
           </p>
         </section>
       ) : summary ? (
         <>
-          <section
-            style={{
-              display: "grid",
-              gap: "0.75rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            }}
-          >
+          <section className="stats-grid">
             <StatCard label="Total tasks" value={summary.total} />
             <StatCard label="Recent activity" value={summary.recentActivityCount} hint="Logged events" />
           </section>
 
-          <section className="card" style={{ padding: "1rem" }}>
-            <h2 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "1.05rem" }}>
+          <section className="card card-pad">
+            <h2 className="section-title">
               Tasks by status
             </h2>
-            <section
-              style={{
-                display: "grid",
-                gap: "0.75rem",
-                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              }}
-            >
+            <section className="stats-grid">
               <StatCard label="To do" value={summary.byStatus.todo} />
               <StatCard
                 label="In progress"

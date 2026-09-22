@@ -38,8 +38,8 @@ const FilterButton = memo(function FilterButton({ label, filterValue, active, on
 
 export function StatusFilter({ value, onChange }: StatusFilterProps) {
   return (
-    <section aria-label="Filter tasks by status" className="card" style={{ padding: "0.8rem" }}>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+    <section aria-label="Filter tasks by status" className="card card-pad">
+      <div className="controls-row">
         {FILTERS.map((filter) => (
           <FilterButton
             key={filter.value}

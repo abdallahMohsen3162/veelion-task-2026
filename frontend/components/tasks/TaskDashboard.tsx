@@ -42,18 +42,18 @@ export function TaskDashboard() {
 
   return (
     <section className="stack">
-      <header className="card" style={{ padding: "1rem" }}>
-        <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Task Dashboard</h1>
+      <header className="card card-pad">
+        <h1 className="page-title">Task Dashboard</h1>
         {refreshing ? (
-          <small role="status" style={{ color: "var(--muted)" }}>
+          <small role="status" className="muted">
             Refreshing…
           </small>
         ) : null}
       </header>
 
-      <section className="card" style={{ padding: "1rem", display: "grid", gap: "0.75rem" }}>
+      <section className="card card-pad form-grid">
         <div>
-          <label htmlFor="task-search" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>
+          <label htmlFor="task-search" className="form-label">
             Search tasks
           </label>
           <input
@@ -66,9 +66,9 @@ export function TaskDashboard() {
           />
         </div>
 
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div className="controls-row">
           <div>
-            <label htmlFor="task-sort" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+            <label htmlFor="task-sort" className="form-label">
               Sort by
             </label>
             <select
@@ -84,7 +84,7 @@ export function TaskDashboard() {
           </div>
 
           <div>
-            <label htmlFor="task-order" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+            <label htmlFor="task-order" className="form-label">
               Order
             </label>
             <select
@@ -99,7 +99,7 @@ export function TaskDashboard() {
           </div>
 
           <div>
-            <label htmlFor="task-limit" style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600 }}>
+            <label htmlFor="task-limit" className="form-label">
               Per page
             </label>
             <select
@@ -119,7 +119,7 @@ export function TaskDashboard() {
       <StatusFilter value={filter} onChange={setFilter} />
 
       {loading ? (
-        <section className="card" style={{ padding: "1rem" }}>
+        <section className="card card-pad">
           <p role="status" style={{ margin: 0 }}>
             Loading tasks...
           </p>
@@ -127,11 +127,8 @@ export function TaskDashboard() {
       ) : null}
 
       {error ? (
-        <section
-          className="card"
-          style={{ padding: "1rem", borderColor: "#e3b4c0", background: "#fff8fa" }}
-        >
-          <p role="alert" style={{ marginTop: 0, marginBottom: "0.75rem", color: "var(--danger)" }}>
+        <section className="card card-pad error-panel">
+          <p role="alert" className="error-text" style={{ marginTop: 0, marginBottom: "0.75rem" }}>
             {error}
           </p>
           <button type="button" className="button" onClick={fetchTasks}>
@@ -150,11 +147,7 @@ export function TaskDashboard() {
       ) : null}
 
       {!loading && meta.totalPages > 1 ? (
-        <section
-          className="card"
-          style={{ padding: "0.8rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}
-          aria-label="Tasks pagination"
-        >
+        <section className="card card-pad pagination" aria-label="Tasks pagination">
           <button
             type="button"
             className="button"
@@ -163,7 +156,7 @@ export function TaskDashboard() {
           >
             Previous
           </button>
-          <small style={{ color: "var(--muted)" }}>
+          <small className="muted">
             Page {meta.page} of {meta.totalPages} · {meta.total} total
           </small>
           <button

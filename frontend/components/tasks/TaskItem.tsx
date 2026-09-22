@@ -13,20 +13,13 @@ function TaskItemView({ task, busy, onToggle }: TaskItemProps) {
   }, [onToggle, task.id, task.completed]);
 
   return (
-    <li
-      className="card"
-      style={{
-        padding: "0.85rem",
-        display: "grid",
-        gap: "0.4rem",
-      }}
-    >
+    <li className="card card-pad form-grid">
       <div style={{ display: "flex", justifyContent: "space-between", gap: "0.8rem", alignItems: "start" }}>
         <p style={{ margin: 0, fontWeight: 600 }}>{task.title}</p>
         <span className="badge">{task.completed ? "Completed" : "Pending"}</span>
       </div>
 
-      <small style={{ color: "var(--muted)" }}>
+      <small className="muted">
         Updated: {new Date(task.updatedAt).toLocaleString()}
       </small>
 

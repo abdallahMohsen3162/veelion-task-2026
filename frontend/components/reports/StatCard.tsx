@@ -6,11 +6,11 @@ type StatCardProps = {
 
 export function StatCard({ label, value, hint }: StatCardProps) {
   return (
-    <section className="card" style={{ padding: "1rem" }} aria-label={label}>
-      <small style={{ color: "var(--muted)", fontWeight: 600 }}>{label}</small>
+    <section className="card card-pad" aria-label={label}>
+      <small className="muted" style={{ fontWeight: 600 }}>{label}</small>
       <p style={{ margin: "0.25rem 0", fontSize: "1.8rem", fontWeight: 700 }}>{value}</p>
       {hint ? (
-        <small style={{ color: "var(--muted)" }}>{hint}</small>
+        <small className="muted">{hint}</small>
       ) : null}
     </section>
   );
