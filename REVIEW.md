@@ -451,7 +451,7 @@ pre-refactor snapshot above.
 | Task mutations | Validation, activity logging, per-file mutation serialization, and atomic JSON replacement are now in the owning backend boundaries. |
 | Cache | GET responses remain query-aware but now expire and are bounded by a maximum entry count; successful mutations invalidate the cache. |
 | Configuration | Data paths no longer depend on the process working directory. CORS uses an explicit origin allowlist with a local development default. |
-| Reports and documentation | Reports remain compatible with the boolean task model; `recentActivityCount` is documented as total stored activity rather than an undefined time-window metric. README architecture notes now match direct Express access. |
+| Reports and documentation | Reports remain compatible with the boolean task model; `recentActivityCount` is documented as total stored activity rather than an undefined time-window metric. The supplied root README is intentionally unchanged; current backend and frontend API details are documented in their respective project docs. |
 
 ### Remaining risks and recommendations
 
@@ -474,5 +474,11 @@ pre-refactor snapshot above.
 - Concurrent JSON mutation probe using 25 queued writes: passed with 25
   records preserved.
 - Frontend TypeScript check (`npx tsc --noEmit`): passed.
-- Production build and live endpoint smoke tests remain to be run after the
-  final merge in the available environment.
+- Frontend production build and live endpoint smoke tests passed before the
+  final merge; this correction branch changes only submission documentation.
+
+### Submission-file constraint
+
+The root `README.md` was supplied by the task setter and is intentionally kept
+unchanged. Implementation and review notes belong in the code, `REVIEW.md`,
+`PLAN.md`, backend README, and frontend API documentation instead.
