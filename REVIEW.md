@@ -437,3 +437,42 @@ Entries are appended here as fix branches merge into `main`.
 | # | Finding | Resolution |
 |---|---|---|
 | FEAT-1 | No way to add a task — backend `POST /tasks` existed but the UI had zero create affordance | Backend needed no changes (verified live: `POST /tasks` → `201 {data}`, blank title → `400` with details, `DELETE` → `204`). Frontend: new `createTaskPayloadSchema` in `lib/schemas.ts` (trimmed title, 1–200 chars, strict — mirrors backend), new `createTask()` in `useTasks` (`POST` straight to Express, Zod-validated both ways, `creating` state, jumps to page 1 and reloads so the new task surfaces first), and new memoized `components/tasks/TaskCreateForm.tsx` (labeled input, inline `role="alert"` empty-title message, primary submit disabled while creating) wired at the top of `TaskDashboard`. Verified `tsc`, `next build`, `/tasks` renders the form, and create → list-first → delete works end to end via the exact UI code path. |
+
+## Final Review Pass
+
+This pass reviews the current implementation rather than the original
+pre-refactor snapshot above.
+
+### Resolved
+
+| Area | Result |
+|---|---|
+| Activity feed | Uses one data source, explicit loading/error/empty states, typed response validation, pagination, and request cancellation/sequence guards. |
+| Task mutations | Validation, activity logging, per-file mutation serialization, and atomic JSON replacement are now in the owning backend boundaries. |
+| Cache | GET responses remain query-aware but now expire and are bounded by a maximum entry count; successful mutations invalidate the cache. |
+| Configuration | Data paths no longer depend on the process working directory. CORS uses an explicit origin allowlist with a local development default. |
+| Reports and documentation | Reports remain compatible with the boolean task model; `recentActivityCount` is documented as total stored activity rather than an undefined time-window metric. README architecture notes now match direct Express access. |
+
+### Remaining risks and recommendations
+
+1. JSON storage is appropriate for this assessment but not multi-process
+  production deployment. A database with transactions should replace the
+  file store when multiple backend processes or larger datasets are needed.
+2. CORS is not authentication. Any allowed origin can still call mutation
+  endpoints; production deployment should add authentication, authorization,
+  and rate limiting appropriate to the product.
+3. There is no committed automated test suite or lint configuration. The
+  verification performed for this pass is limited to Node syntax checks, a
+  temporary concurrent-mutation probe, and `frontend/npx tsc --noEmit`.
+4. Activity logging is intentionally best-effort: a task mutation succeeds if
+  its activity log cannot be written. This preserves the task API contract but
+  means the feed is not a transactional audit log.
+
+### Verification record
+
+- Backend JavaScript syntax checks: passed.
+- Concurrent JSON mutation probe using 25 queued writes: passed with 25
+  records preserved.
+- Frontend TypeScript check (`npx tsc --noEmit`): passed.
+- Production build and live endpoint smoke tests remain to be run after the
+  final merge in the available environment.
