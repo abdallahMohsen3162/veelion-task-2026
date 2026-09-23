@@ -8,14 +8,23 @@ const HttpError = require('./utils/httpError');
 
 const app = express();
 
-// The Next.js frontend calls this API directly from the browser, so allow
-// cross-origin requests (dependency-free CORS: no new packages needed).
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS || 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
+    return origin && !allowedOrigins.has(origin) ? res.sendStatus(403) : res.sendStatus(204);
   }
   next();
 });

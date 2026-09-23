@@ -196,4 +196,5 @@ type GetTasksSummaryResponse = TasksSummary;
 
 Notes:
 - `in-progress` is currently returned as `0` because task data only includes boolean `completed`.
+- `recentActivityCount` is the total number of activity records currently stored; it is not filtered by a time window.
 - Response shape is raw object.

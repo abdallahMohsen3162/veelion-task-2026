@@ -160,6 +160,8 @@ We are evaluating:
 ## Project Notes
 
 - The frontend uses Next.js App Router with TypeScript.
-- Route handlers under `app/api/*` proxy requests to backend.
+- The browser calls the Express backend directly using `BACKEND_BASE_URL` (or
+  the legacy `NEXT_PUBLIC_BACKEND_API_URL`) and the backend allows configured
+  development origins through `CORS_ORIGINS`.
 - Backend endpoint docs are in `docs/backend-endpoints.md`.
 - Backend installation notes are in `/backend/README.md`.

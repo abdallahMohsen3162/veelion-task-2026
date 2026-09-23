@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BackNav } from "@/components/common/BackNav";
 import { SortOrderToggle } from "@/components/common/SortOrderToggle";
 import { BACKEND_BASE_URL } from "@/lib/constants";
@@ -61,19 +61,25 @@ export default function ActivityPage() {
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const activeControllerRef = useRef<AbortController | null>(null);
+  const requestSequenceRef = useRef(0);
 
   const loadActivity = useCallback(
-    async (signal: AbortSignal) => {
+    async () => {
+      activeControllerRef.current?.abort();
+      const controller = new AbortController();
+      activeControllerRef.current = controller;
+      const requestSequence = ++requestSequenceRef.current;
       setLoading(true);
       try {
-        const result = await fetchActivityLogs({ search, sort, order, page, limit }, signal);
-        if (!signal.aborted) {
+        const result = await fetchActivityLogs({ search, sort, order, page, limit }, controller.signal);
+        if (!controller.signal.aborted && requestSequence === requestSequenceRef.current) {
           setLogs(result.data);
           setMeta(result.meta);
           setError(null);
         }
       } catch (err) {
-        if (!signal.aborted) {
+        if (!controller.signal.aborted && requestSequence === requestSequenceRef.current) {
           if (err instanceof Error && err.name === "AbortError") {
             return;
           }
@@ -81,7 +87,7 @@ export default function ActivityPage() {
           setError(err instanceof Error ? err.message : "Failed to load activity.");
         }
       } finally {
-        if (!signal.aborted) {
+        if (!controller.signal.aborted && requestSequence === requestSequenceRef.current) {
           setLoading(false);
         }
       }
@@ -90,17 +96,15 @@ export default function ActivityPage() {
   );
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadActivity(controller.signal);
+    loadActivity();
 
     return () => {
-      controller.abort();
+      activeControllerRef.current?.abort();
     };
   }, [loadActivity]);
 
   const handleRetry = () => {
-    const controller = new AbortController();
-    loadActivity(controller.signal);
+    loadActivity();
   };
 
   const handleSearchChange = (value: string) => {

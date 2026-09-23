@@ -1,10 +1,9 @@
-const path = require('node:path');
-
 const { createId } = require('../../../utils/id');
-const { readJsonArray, writeJsonArray } = require('../../../utils/jsonStore');
+const { getDataFilePath, readJsonArray, mutateJsonArray } = require('../../../utils/jsonStore');
 const HttpError = require('../../../utils/httpError');
+const activityService = require('../../activity/services/activity.service');
 
-const TASKS_FILE_PATH = path.join(process.cwd(), 'data', 'tasks.json');
+const TASKS_FILE_PATH = getDataFilePath('tasks.json');
 
 function buildTaskRecord(payload) {
   const now = new Date().toISOString();
@@ -16,6 +15,15 @@ function buildTaskRecord(payload) {
     createdAt: now,
     updatedAt: now,
   };
+}
+
+function logTaskActivity(action, task) {
+  // Activity logging is best-effort: it must never break the task mutation.
+  try {
+    activityService.createActivity({ action, info: String(task.title || '') });
+  } catch (error) {
+    console.error('Failed to write activity log:', error.message);
+  }
 }
 
 function matchesTaskStatus(task, status) {
@@ -99,46 +107,58 @@ async function getTaskById(taskId) {
 }
 
 async function createTask(payload) {
-  const tasks = await readJsonArray(TASKS_FILE_PATH);
-  const newTask = buildTaskRecord(payload);
+  const newTask = await mutateJsonArray(TASKS_FILE_PATH, (tasks) => {
+    const task = buildTaskRecord(payload);
+    tasks.push(task);
+    return task;
+  });
 
-  tasks.push(newTask);
-  await writeJsonArray(TASKS_FILE_PATH, tasks);
+  logTaskActivity('added a task', newTask);
 
   return newTask;
 }
 
 async function updateTask(taskId, updates) {
-  const tasks = await readJsonArray(TASKS_FILE_PATH);
-  const taskIndex = tasks.findIndex((item) => item.id === taskId);
+  const updatedTask = await mutateJsonArray(TASKS_FILE_PATH, (tasks) => {
+    const taskIndex = tasks.findIndex((item) => item.id === taskId);
 
-  if (taskIndex === -1) {
-    throw new HttpError(404, 'Task not found.');
+    if (taskIndex === -1) {
+      throw new HttpError(404, 'Task not found.');
+    }
+
+    const updated = {
+      ...tasks[taskIndex],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    tasks[taskIndex] = updated;
+    return updated;
+  });
+
+  if (updates.completed === true) {
+    logTaskActivity('completed a task', updatedTask);
+  } else if (updates.completed === false) {
+    logTaskActivity('reopened a task', updatedTask);
+  } else {
+    logTaskActivity('updated a task', updatedTask);
   }
-
-  const existingTask = tasks[taskIndex];
-  const updatedTask = {
-    ...existingTask,
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
-
-  tasks[taskIndex] = updatedTask;
-  await writeJsonArray(TASKS_FILE_PATH, tasks);
 
   return updatedTask;
 }
 
 async function deleteTask(taskId) {
-  const tasks = await readJsonArray(TASKS_FILE_PATH);
-  const taskIndex = tasks.findIndex((item) => item.id === taskId);
+  const removedTask = await mutateJsonArray(TASKS_FILE_PATH, (tasks) => {
+    const taskIndex = tasks.findIndex((item) => item.id === taskId);
 
-  if (taskIndex === -1) {
-    throw new HttpError(404, 'Task not found.');
-  }
+    if (taskIndex === -1) {
+      throw new HttpError(404, 'Task not found.');
+    }
 
-  const [removedTask] = tasks.splice(taskIndex, 1);
-  await writeJsonArray(TASKS_FILE_PATH, tasks);
+    return tasks.splice(taskIndex, 1)[0];
+  });
+
+  logTaskActivity('deleted a task', removedTask);
 
   return removedTask;
 }

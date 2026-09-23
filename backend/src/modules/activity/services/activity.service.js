@@ -1,7 +1,9 @@
 const fs = require('node:fs');
-const path = require('node:path');
 
-const ACTIVITY_FILE_PATH = path.join(process.cwd(), 'data', 'activity.json');
+const { createId } = require('../../../utils/id');
+const { getDataFilePath } = require('../../../utils/jsonStore');
+
+const ACTIVITY_FILE_PATH = getDataFilePath('activity.json');
 
 function readActivityStore() {
   if (!fs.existsSync(ACTIVITY_FILE_PATH)) {
@@ -67,14 +69,16 @@ function queryActivityLogs(options) {
 function createActivity(payload) {
   const entries = readActivityStore();
   const entry = {
-    id: String(Date.now()),
+    id: createId(),
     action: payload.action,
     info: payload.info,
     when: new Date().toISOString(),
   };
 
   entries.push(entry);
-  fs.writeFileSync(ACTIVITY_FILE_PATH, JSON.stringify(entries, null, 2));
+  const temporaryPath = `${ACTIVITY_FILE_PATH}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(entries, null, 2)}\n`, 'utf8');
+  fs.renameSync(temporaryPath, ACTIVITY_FILE_PATH);
   return entry;
 }
 
